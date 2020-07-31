@@ -6,25 +6,29 @@ import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.text.TextBlock;
 import com.google.android.gms.vision.text.TextRecognizer;
 
-import java.io.File;
 import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
     SurfaceView cameraView;
-    TextView textView;
+    TextView textView,checkView;
+    Button btn_freeze,btn_yes,btn_no;
     CameraSource cameraSource;
     final int RequestCameraPermissionId = 1001;
 
@@ -53,12 +57,22 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        btn_no = findViewById(R.id.no);
+        btn_yes = findViewById(R.id.yes);
+        checkView = findViewById(R.id.checkView);
+
+        btn_no.setVisibility(View.INVISIBLE);
+        btn_yes.setVisibility(View.INVISIBLE);
+        checkView.setVisibility(View.INVISIBLE);
+
+        //surface view containing the camera screen
         cameraView = findViewById(R.id.surface_view);
         textView = findViewById(R.id.text_view);
         TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
         if(!textRecognizer.isOperational()){
             Log.w("MainActivity","Detector dependencies arent availible yet");
         } else{
+
             cameraSource = new CameraSource.Builder(getApplicationContext(),textRecognizer)
                     .setFacing(CameraSource.CAMERA_FACING_BACK)
                     .setRequestedPreviewSize(1280,1024)
@@ -78,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                                     RequestCameraPermissionId);
                             return;
                         }
-
+                        //binds surface view to user's camera source
                         cameraSource.start(cameraView.getHolder());
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -96,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
+
             textRecognizer.setProcessor(new Detector.Processor<TextBlock>() {
                 @Override
                 public void release() {
@@ -105,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void receiveDetections(Detector.Detections<TextBlock> detections) {
                     final SparseArray<TextBlock> items = detections.getDetectedItems();
+                    // checks if text exists
                     if(items.size()!=0){
                         textView.post(new Runnable() {
                             @Override
@@ -119,6 +135,52 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                     }
+                }
+            });
+
+            btn_freeze = findViewById(R.id.button);
+            btn_freeze.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    cameraSource.stop();
+                    checkView.setVisibility(View.VISIBLE);
+                    btn_no.setVisibility(View.VISIBLE);
+                    btn_yes.setVisibility(View.VISIBLE);
+
+                    btn_yes.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            String current = textView.getText().toString();
+                            textView.setText(current);
+                            Toast.makeText(MainActivity.this,"Successfully recieved text",
+                                    Toast.LENGTH_SHORT).show();
+                            cameraSource.stop();
+                            cameraView.setVisibility(View.INVISIBLE);
+                            btn_yes.setVisibility(View.INVISIBLE);
+                            btn_no.setVisibility(View.INVISIBLE);
+                            checkView.setVisibility(View.INVISIBLE);
+                            btn_freeze.setVisibility(View.INVISIBLE);
+                        }
+                    });
+
+                    btn_no.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Toast.makeText(MainActivity.this,"Text not scanned",
+                                    Toast.LENGTH_SHORT).show();
+                            btn_yes.setVisibility(View.INVISIBLE);
+                            btn_no.setVisibility(View.INVISIBLE);
+                            checkView.setVisibility(View.INVISIBLE);
+
+                            try {
+                                cameraSource.start(cameraView.getHolder());
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                        }
+                    });
+
                 }
             });
         }
