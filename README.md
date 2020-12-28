@@ -1,5 +1,5 @@
 # OCR
-Optical Character Recognition app. Allows the user to scan a picture and converts it to text
+Optical Character Recognition app. Allows the user to scan a picture and converts it to text<br>
 The following is a picture of what the user's screen looks like:
 The top 70% of the screen is what the camera sees.
 The bottom part where it says: "Bring a romantic starry night" is the output for that picture
